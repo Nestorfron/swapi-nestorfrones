@@ -76,7 +76,7 @@ def create_user():
         db.session.add(user)
         db.session.commit()
         db.session.refresh(user)
-        return jsonify({"message": f"Character craterd {user.email}!"}),201
+        return jsonify({"message": f"User craterd {user.email}!"}),201
     except Exception as error:
         return jsonify({"error": f"{error}!"}),500
 
@@ -166,9 +166,63 @@ def create_planet():
     except Exception as error:
         return jsonify({"error": f"{error}!"}),500
 
+#Get User Favorites
+
+@app.route('/users/<int:user_id>/favorites', methods=['GET'])
+def get_user_favorites(user_id):
+    try:
+        user = User.query.get(user_id)
+        if user_id is None:
+
+            return  jsonify({"error": "user not found"}),404
+        favorites = [favorite.serialize() for favorite in user.favorites]
+        return jsonify({
+            "favorites": favorites
+        }), 200
+    except Exception as error:
+        return jsonify({"error": f"{error}!"}),500
+    
+
+#Get favorites planets of user  
+    
+@app.route('/users/<int:user_id>/favorites/planets', methods=['GET'])
+def get_user_favorite_planets(user_id):
+    try:
+        user = User.query.get(user_id)
+        if user_id is None:
+            return  jsonify({"error": "user not found"}),404
+        planets = [planet.serialize() for planet in user.favorites]
+        return jsonify({
+            "planets": planets
+        }), 200
+    except Exception as error:
+        return jsonify({"error": f"{error}!"}),500
+
+#Post Planet in favorite User
+
+@app.route('/users/<int:user_id>/favorites/planets/<int:planet_id>', methods=['POST'])
+def add_planet_favorite(user_id, planet_id):
+    user = User.query.get(user_id)
+    planet = Planet.query.get(planet_id)
+    favorite = Favorite( user_id=user.id, planet=[planet])
+    try:
+        db.session.add(favorite)
+        db.session.commit()
+        db.session.refresh(favorite)
+        return jsonify({"message": f"Favorite added!"}),201
+    except Exception as error:
+        return jsonify({"error": f"{error}!"}),500
 
 
-
+@app.route('/users/<int:user_id>/favorites/planets/<int:planet_id>', methods=['DELETE'])
+def delete_planet_favorite(user_id, planet_id):
+    user = User.query.get(user_id)
+    favorite = Favorite.query.filter_by(user_id=user_id, planet_id=planet_id).first()
+    if favorite is None:
+        return jsonify({"error": f"El planeta con ID {planet_id} no es un favorito del usuario con ID {user_id}"}), 404
+    db.session.delete(favorite)
+    db.session.commit()
+    return jsonify({"message": f"Se eliminó el planeta favorito con ID {planet_id} del usuario con ID {user_id}"}), 200
 
 
 

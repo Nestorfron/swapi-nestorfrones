@@ -23,14 +23,14 @@ class User(db.Model):
     favorites = db.relationship('Favorite', backref='user', lazy=True)
 
     def __repr__(self):
-        f"<user{self.name}>"
+        return f"<user{self.name}>"
 
     def serialize(self):
         return {
             "id": self.id,
             "email": self.email,
             "is_active": self.is_active,
-            "favorite": [favorite.serialize() for favorite in self.favorites]
+            "favorites": [favorite.serialize() for favorite in self.favorites]
             # do not serialize the password, its a security breach
         }
 
@@ -42,9 +42,6 @@ class Character(db.Model):
     specie = db.Column(db.Enum(Specie), nullable=False)
     favorite_id = db.Column(db.Integer, db.ForeignKey("favorite.id"))
 
-
-
-
     def serialize(self):
         return {
             "id": self.id,
@@ -54,7 +51,7 @@ class Character(db.Model):
         }
 
     def __repr__(self):
-        f"<character{self.name}>"
+        return f"<character{self.name}>"
 
 
 class Planet(db.Model):
@@ -65,8 +62,6 @@ class Planet(db.Model):
     favorite_id = db.Column(db.Integer, db.ForeignKey("favorite.id"))
 
 
-  
-
     def serialize(self):
         return {
             "id": self.id,
@@ -76,27 +71,24 @@ class Planet(db.Model):
         }
 
     def __repr__(self):
-        f"<planet{self.name}>"
+        return f"<planet{self.name}>"
 
 
 class Favorite(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    number = db.Column(db.Integer, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     planet = db.relationship("Planet", backref="favorite")
     character = db.relationship("Character", backref="favorite")
     
-
     def serialize(self):
         return {
             "id": self.id,
-            "number": self.number,
-            #"planet": [planet.serialize() for planet in self.planet],
-            #"character": [character.serialize() for character in self.character]
+            "planet": [planet.serialize() for planet in self.planet],
+            "character": [character.serialize() for character in self.character]
         }
 
     def __repr__(self):
-        f"<favorite{self.name}>"
+        return f"<favorite{self.number}>"
     
 
 
