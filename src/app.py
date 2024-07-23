@@ -208,11 +208,14 @@ def create_planet():
 
 #Get User Favorites
 
-@app.route('/users/<int:user_id>/favorites', methods=['GET'])
-def get_user_favorites(user_id):
+@app.route('/user/favorites', methods=['GET'])
+@jwt_required()
+def get_user_favorites():
     try:
+        current_user = get_jwt_identity()
+        user_id = current_user.get("id")
         user = User.query.get(user_id)
-        if user_id is None:
+        if user is None:
             return  jsonify({'error': 'user not found'}),404
         favorites = [favorite.serialize() for favorite in user.favorites]
         return jsonify({
@@ -223,16 +226,16 @@ def get_user_favorites(user_id):
 
 #Post Planet in favorite User
 
-@app.route('/me/favorites/planets/<int:planet_id>', methods=['POST'])
+@app.route('/favorites/planets/<int:planet_id>', methods=['POST'])
 @jwt_required()
 def add_favorite_planet(planet_id):
+    current_user = get_jwt_identity()
+    user_id = current_user.get("id")
+    planet = Planet.query.get(planet_id)
+    if planet is None:
+        return jsonify({"error": "Planet not found"}),404
+    favorite = Favorite(user_id=user_id, planets=[planet])
     try:
-        current_user_id = get_jwt_identity()
-        planet = Planet.query.get(planet_id)
-        if planet is None:
-            return jsonify({"error": "Planet not found"}), 404
-        favorite = Favorite(user_id=current_user_id)
-        favorite.planets.append(planet)
         db.session.add(favorite)
         db.session.commit()
         return jsonify({"message": "Planet added to favorites"}), 201
