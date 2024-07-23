@@ -39,6 +39,7 @@ class User(db.Model):
 class Favorite(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
     characters = db.relationship("Character", backref="favorite", lazy=True)
     planets = db.relationship("Planet", backref="favorite", lazy=True)
 
