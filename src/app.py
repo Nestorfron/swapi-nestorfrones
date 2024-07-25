@@ -43,7 +43,7 @@ def sitemap():
     return generate_sitemap(app)
 
 
-#register User
+#register User (create user)
 
 @app.route('/register', methods=['POST'])
 def user_register():
@@ -246,7 +246,7 @@ def add_favorite_planet(planet_id):
         db.session.rollback()
         return jsonify({"error": {error}}), 500
     
-#Delete Planet in favorite User
+#Delete Planet  favorite of User
 
 @app.route('/favorites/planets/<int:planet_id>', methods=['DELETE'])
 @jwt_required()
@@ -254,12 +254,10 @@ def delete_favorite_planet(planet_id):
     try:
         current_user = get_jwt_identity()
         user_id = current_user.get("id")
-        planet = Planet.query.filter_by(id=planet_id)          
+        planet = Planet.query.get(planet_id)        
         if planet is None:
             return jsonify({"error": "Planet not found"}),404
-        if planet.user_id is not user_id:
-            return jsonify({"error": "Planet not favorite"}),404
-        db.session.remove(planet)
+        db.session.delete(planet)
         db.session.commit()
         return jsonify({"message": f"Planet removed from favorites"}), 200
     except Exception as error:
@@ -284,28 +282,24 @@ def add_favorite_character(people_id):
     except Exception as error:
         return jsonify({"error": {error}}), 500
     
-#Delete Character in favorite User    
+#Delete Character favorite of User    
 
 @app.route('/favorites/people/<int:people_id>', methods=['DELETE'])
 @jwt_required()
 def delete_favorite_character(people_id):
     try:
-        current_user_id = get_jwt_identity()
-        favorite = Favorite.query.filter_by(user_id=current_user_id).first()
-        if favorite is None:
-            return jsonify({"error": "No favorite found"}), 404
-        character = Character.query.get(people_id)
+        current_user = get_jwt_identity()
+        user_id = current_user.get("id")
+        character = Character.query.get(people_id)        
         if character is None:
-            return jsonify({"error": f"Character not found"}), 404
-        if character not in favorite.characters:
-            return jsonify({"error": f"Planet is not a favorite"}), 404
-        favorite.characters.remove(character)
+            return jsonify({"error": "Character not found"}),404
+        db.session.delete(character)
         db.session.commit()
         return jsonify({"message": f"Character removed from favorites"}), 200
     except Exception as error:
         return jsonify({"error": {error}}), 500
-
-
+    
+    
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 3000))
