@@ -23,14 +23,17 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     is_active = db.Column(db.Boolean(), nullable=False, default=True)
-    favorites = db.relationship('Favorite', backref='user', lazy=True)
+    planets = db.relationship('Planet', backref='user', lazy=True)
+    characters = db.relationship('Character', backref='user', lazy=True)
+
 
     def serialize(self):
         return {
             'id': self.id,
             'email': self.email,
             'is_active': self.is_active,
-            'favorites': [favorite.serialize() for favorite in self.favorites]
+            'planets': [planet.serialize() for planet in self.planets],
+            'characters': [character.serialize() for character in self.characters]
         }
     
     def __repr__(self):
@@ -39,16 +42,13 @@ class User(db.Model):
 class Favorite(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    character_id = db.Column(db.Integer, db.ForeignKey('character.id'), nullable=False)
+    planet_id = db.Column(db.Integer, db.ForeignKey('planet.id'), nullable=False)
     
-    characters = db.relationship("Character", backref="favorite", lazy=True)
-    planets = db.relationship("Planet", backref="favorite", lazy=True)
-
-
+    
     def serialize(self):
         return {
             "id": self.id,
-            'planets': [planet.serialize() for planet in self.planets],
-            'characters': [character.serialize() for character in self.characters]
         }
 
     def __repr__(self):
@@ -56,7 +56,7 @@ class Favorite(db.Model):
 
 class Character(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    favorite_id = db.Column(db.Integer, db.ForeignKey('favorite.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     name = db.Column(db.String(40), nullable=False)
     gender = db.Column(db.Enum(Gender), nullable=False)
     specie = db.Column(db.Enum(Specie), nullable=False)
@@ -64,7 +64,7 @@ class Character(db.Model):
     def serialize(self):
         return {
             'id': self.id,
-            'favorite_id': self.favorite_id,
+            'user_id': self.user_id,
             'name': self.name,
             'gender': self.gender.value,
             'specie': self.specie.value
@@ -75,7 +75,7 @@ class Character(db.Model):
 
 class Planet(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    favorite_id = db.Column(db.Integer, db.ForeignKey('favorite.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     name = db.Column(db.String(40), nullable=False)
     diameter = db.Column(db.Integer, nullable=False)
     population = db.Column(db.Integer, nullable=False)
@@ -84,7 +84,7 @@ class Planet(db.Model):
     def serialize(self):
         return {
             'id': self.id,
-            'favorite_id': self.favorite_id,
+            'user_id': self.user_id,
             'name': self.name,
             'diameter': self.diameter,
             'population': self.population

@@ -80,12 +80,13 @@ def login():
         if user is None:
             return jsonify({"error": "User not exist"}), 404
         if not check_password_hash(user.password, password):
-            return jsonify({"errro":"Try again later"}), 400
+            return jsonify({"error":"Try again later"}), 400
         auth_token = create_access_token({"id" : user.id, "email" : user.email})
         return auth_token
     except Exception as error:
         return jsonify({"error": f'{error}'}),500
     
+
 #Get User loged
     
 @app.route('/me', methods=['GET'])
@@ -217,14 +218,16 @@ def get_user_favorites():
         user = User.query.get(user_id)
         if user is None:
             return  jsonify({'error': 'user not found'}),404
-        favorites = [favorite.serialize() for favorite in user.favorites]
+        characters = [character.serialize() for character in user.characters]
+        planets = [planet.serialize() for planet in user.planets]
         return jsonify({
-            'favorites': favorites
+            'Characters': characters,
+            'Planets': planets
         }), 200
     except Exception as error:
         return jsonify({'error': f'{error}!'}),500
 
-#Post Planet in favorite User
+#Post Planet favorite in User
 
 @app.route('/favorites/planets/<int:planet_id>', methods=['POST'])
 @jwt_required()
@@ -234,9 +237,9 @@ def add_favorite_planet(planet_id):
     planet = Planet.query.get(planet_id)
     if planet is None:
         return jsonify({"error": "Planet not found"}),404
-    favorite = Favorite(user_id=user_id, planets=[planet])
+    planet = Planet(name=planet.name, diameter=planet.diameter, population=planet.population, user_id=user_id )
     try:
-        db.session.add(favorite)
+        db.session.add(planet)
         db.session.commit()
         return jsonify({"message": "Planet added to favorites"}), 201
     except Exception as error:
@@ -245,39 +248,37 @@ def add_favorite_planet(planet_id):
     
 #Delete Planet in favorite User
 
-@app.route('/me/favorites/planets/<int:planet_id>', methods=['DELETE'])
+@app.route('/favorites/planets/<int:planet_id>', methods=['DELETE'])
 @jwt_required()
 def delete_favorite_planet(planet_id):
     try:
-        current_user_id = get_jwt_identity()
-        favorite = Favorite.query.filter_by(user_id=current_user_id).first()
-        if favorite is None:
-            return jsonify({"error": "No favorite found"}), 404
-        planet = Planet.query.get(planet_id)
+        current_user = get_jwt_identity()
+        user_id = current_user.get("id")
+        planet = Planet.query.filter_by(id=planet_id)          
         if planet is None:
-            return jsonify({"error": f"Planet not found"}), 404
-        if planet not in favorite.planets:
-            return jsonify({"error": f"Planet is not a favorite"}), 404
-        favorite.planets.remove(planet)
+            return jsonify({"error": "Planet not found"}),404
+        if planet.user_id is not user_id:
+            return jsonify({"error": "Planet not favorite"}),404
+        db.session.remove(planet)
         db.session.commit()
         return jsonify({"message": f"Planet removed from favorites"}), 200
     except Exception as error:
         return jsonify({"error": {error}}), 500
 
     
-#Post Character in favorite User
+#Post Character favorite in User
 
-@app.route('/me/favorites/people/<int:people_id>', methods=['POST'])
+@app.route('/favorites/people/<int:people_id>', methods=['POST'])
 @jwt_required()
 def add_favorite_character(people_id):
     try:
-        current_user_id = get_jwt_identity()
+        current_user = get_jwt_identity()
+        user_id = current_user.get("id")
         character = Character.query.get(people_id)
         if character is None:
             return jsonify({"error": f"Character not found"}), 404
-        favorite = Favorite(user_id=current_user_id)
-        favorite.planets.append(character)
-        db.session.add(favorite)
+        character = Character(name=character.name, gender=character.gender, specie=character.specie, user_id=user_id)
+        db.session.add(character)
         db.session.commit() 
         return jsonify({"message": f"Character added to favorites"}), 201
     except Exception as error:
@@ -285,7 +286,7 @@ def add_favorite_character(people_id):
     
 #Delete Character in favorite User    
 
-@app.route('/me/favorites/people/<int:people_id>', methods=['DELETE'])
+@app.route('/favorites/people/<int:people_id>', methods=['DELETE'])
 @jwt_required()
 def delete_favorite_character(people_id):
     try:
